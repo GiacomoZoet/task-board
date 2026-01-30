@@ -43,7 +43,8 @@ export const login = async (email, password) => {
         return {
             ok: true,
             message: "Logged in",
-            user: userCredentials,
+            user: userCredentials.user,
+
         }
     } catch (error) {
         console.error(error)

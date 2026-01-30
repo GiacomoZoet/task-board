@@ -1,13 +1,40 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useTodoStore } from '@/stores/TodoStore.js'
-import TodoCard from '@/components/TodoCard.vue'  // Adjust path
+import TodoCard from '@/components/TodoCard.vue'
+import { getUser, isAuthenticated} from "@/services/authentication.js";
+import { addTodo} from "@/services/todos.js";
+import { useToast } from "vue-toastification";
+import {useRouter} from "vue-router";
 
+const router = useRouter();
+const toast = useToast()
 const tasks = useTodoStore()
 
-onMounted(() => {
+onMounted(async () => {
   tasks.getData()
 })
+
+
+
+const addTodoToList = async (todo) => {
+  if (!isAuthenticated()) {
+    toast.warning("Please login to add to favourites")
+    setTimeout(() => {
+      router.push({ path: "/login" })
+    }, 1500)
+    return
+  }
+  const user = getUser()
+
+  const data = {
+    id: todo.id,
+    todo: todo.todo,
+    completed: todo.completed
+  }
+
+}
+
 </script>
 
 <template>
