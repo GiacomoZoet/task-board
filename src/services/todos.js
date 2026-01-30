@@ -1,4 +1,4 @@
-import { db } from '../firebase/config.js'
+import { db } from '@/firebase/config.js'
 import { collection, doc, setDoc, deleteDoc, getDocs } from 'firebase/firestore'
 
 // Add task to todo list
