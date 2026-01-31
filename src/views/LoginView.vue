@@ -1,9 +1,9 @@
 <script setup>
-import {ref} from "vue";
+import {ref, onMounted} from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from 'vue-toastification'
-import { login, register, sendEmailVerificationDB } from '@/services/authentication.js'
-import { getAuth } from "firebase/auth"
+import { login, register, sendEmailVerificationDB, getUser } from '@/services/authentication.js'
+import { getAuth, onAuthStateChanged } from "firebase/auth"
 
 const router = useRouter()
 const toast = useToast()
@@ -16,6 +16,17 @@ const success = ref('')
 const isRegistered = ref(true)
 
 const auth = getAuth()
+
+onMounted(() => {
+  onAuthStateChanged(auth, async (user) => {
+    if (user && !user.emailVerified) {
+      // User is signed in but email not verified
+      await auth.signOut()
+      toast.warning('Please verify your email to continue. Check your inbox.')
+      router.push('/login')
+    }
+  })
+})
 
 const registerUser = async () => {
   error.value = ''
@@ -45,10 +56,12 @@ const registerUser = async () => {
     const verificationResult = await sendEmailVerificationDB(result.user.user)
 
     if (verificationResult && verificationResult.ok) {
-      toast.success("Email verification sent.")
+      toast.success("Email verification sent. Please check your inbox.")
     } else {
       toast.warning("User created but email verification failed. You can resend it later.")
     }
+
+    await auth.signOut()
 
     setTimeout(() => {
       isRegistered.value = true
@@ -70,10 +83,19 @@ const activateSession = async () => {
   success.value = ''
 
   const result = await login(email.value, password.value)
+
+  if (!result.ok) {
+    error.value = result.error
+    toast.error("Login failed. Please check your credentials.")
+    password.value = ''
+    loading.value = false
+    return
+  }
+
   try {
     if (!result.user.emailVerified) {
       await auth.signOut()
-      error.value = 'Please verify your email before logging in. Check your inbox and spam'
+      error.value = 'Please verify your email before logging in. Check your inbox and spam folder.'
       toast.error('Email not verified. Check your email.')
       email.value = ''
       password.value = ''
@@ -81,20 +103,16 @@ const activateSession = async () => {
       return
     }
 
-    if (result.ok) {
-      success.value = result.message
-      toast.success("User login successfully.")
-      setTimeout(() => {
-        router.push('/')
-      }, 200)
-    } else {
-      error.value = result.error
-      toast.error("Login failed. Please check your credentials.")
-      password.value = ''
-    }
+    success.value = result.message
+    toast.success("Login successful!")
+    setTimeout(() => {
+      router.push('/')
+    }, 200)
+
   } catch (error) {
-    error.value = result.error
-    toast.error("Login failed. Please check your credentials.")
+    console.error('Login error:', error)
+    toast.error("An error occurred during login.")
+    await auth.signOut()
   }
 
   loading.value = false
@@ -104,7 +122,6 @@ const activateSession = async () => {
 <template>
   <section id="auth" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4">
 
-    <!-- Register Form -->
     <div v-if="isRegistered===false" class="w-full max-w-md">
       <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
         <div class="text-center mb-8">
@@ -243,7 +260,6 @@ const activateSession = async () => {
 </template>
 
 <style scoped>
-/* Additional hover effects */
 input:focus {
   transform: translateY(-1px);
 }
