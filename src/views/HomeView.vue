@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useTodoStore } from '@/stores/TodoStore.js'
 import TodoCard from '@/components/TodoCard.vue'
 import { getUser, isAuthenticated} from "@/services/authentication.js";
-import {addTodo, getTodos, getAllTodos} from "@/services/todos.js";
+import {addTodo, getTodos, checkTodoExists} from "@/services/todos.js";
 import { useToast } from "vue-toastification";
 import {useRouter} from "vue-router";
 import {getAuth} from "firebase/auth";
@@ -16,9 +16,18 @@ const assignedTask = ref([])
 
 onMounted(async () => {
   tasks.getData()
-  assignedTask.value = await getAllTodos()
-  console.log('HAAAAAA', assignedTask.value.todos)
+
+  const user = getUser()
+
+  if (user.value?.uid) {
+    const result = await getTodos(user.value.uid)
+    assignedTask.value = result.todos || []
+    console.log("Your assigned tasks:", assignedTask.value)
+  } else {
+    console.log("Not logged in")
+  }
 })
+
 
 
 
@@ -30,7 +39,22 @@ const addTodoToList = async (todo) => {
     }, 1500)
     return
   }
+
   const user = getUser()
+
+  const alreadyHave = assignedTask.value.find(t => t.id === todo.id)
+
+  if (alreadyHave) {
+    toast.warning("You already have this task added to your todos!")
+    return
+  }
+
+  const exists = await checkTodoExists(todo.id)
+
+  if (exists) {
+    toast.warning("This task has already been claimed by another user!")
+    return
+  }
 
   const data = {
     id: todo.id,
@@ -39,11 +63,11 @@ const addTodoToList = async (todo) => {
     assignedTo: user.value.uid
   }
 
-
-  const result = await addTodo(user.value.uid , data)
+  const result = await addTodo(user.value.uid, data)
 
   if (result.ok) {
     toast.success("Task added to todolist.")
+    assignedTask.value.push(data)
   } else {
     toast.warning("Failed to add task.")
   }
@@ -59,8 +83,11 @@ const addTodoToList = async (todo) => {
           v-for="todo in tasks.todos"
           :key="todo.id"
           :todo="todo"
+          :show-add-button="true"
+          :show-complete-button="false"
           @add-to-todo="addTodoToList"
       />
+
     </div>
   </section>
 </template>

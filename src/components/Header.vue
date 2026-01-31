@@ -2,17 +2,12 @@
 import { logout, getUser } from "@/services/authentication.js"
 import { useToast } from "vue-toastification"
 import { useRouter } from "vue-router"
-import { ref, onMounted } from 'vue'
 
 const router = useRouter()
 const toast = useToast()
-const user = ref(null)
+const user = getUser()
 
-const loadUser = async () => {
-  user.value = await getUser()
-}
 
-onMounted(loadUser)
 
 const signOut = async () => {
   toast.success("User logged out successfully.")
@@ -28,7 +23,6 @@ const signOut = async () => {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
 
-        <!-- Logo -->
         <div class="flex-shrink-0 flex items-center">
           <router-link
               to="/"
@@ -38,7 +32,6 @@ const signOut = async () => {
           </router-link>
         </div>
 
-        <!-- Desktop Navigation -->
         <div class="hidden md:flex items-center space-x-8">
           <router-link
               to="/"
@@ -54,7 +47,6 @@ const signOut = async () => {
           </router-link>
         </div>
 
-        <!-- User Section -->
         <div v-if="user" class="flex items-center space-x-4">
           <div class="text-sm text-gray-700 font-medium hidden sm:block">
             Hi, {{ user.displayName || user.email?.split('@')[0] }}

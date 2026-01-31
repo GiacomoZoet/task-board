@@ -1,6 +1,8 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import axios from 'axios'
+import { db } from '@/firebase/config.js'
+import { collection, getDocs } from 'firebase/firestore'
 
 export const useTodoStore = defineStore('Todo', () => {
     let todos = ref([])
@@ -8,9 +10,22 @@ export const useTodoStore = defineStore('Todo', () => {
     let getData = async () => {
         try {
             const response = await axios.get('https://dummyjson.com/todos')
-            console.log('API Response:', response.data)
-            console.log('Products:', response.data.todos)
-            todos.value = response.data.todos
+            const apiTodos = response.data.todos
+
+            const todoCollection = collection(db, 'todo')
+            const snapshot = await getDocs(todoCollection)
+            const dbTodos = snapshot.docs.map(doc => doc.data())
+
+            todos.value = apiTodos.map(apiTodo => {
+                const dbTodo = dbTodos.find(db => db.id === apiTodo.id)
+                return {
+                    ...apiTodo,
+                    completed: dbTodo ? dbTodo.completed : apiTodo.completed,
+                    isInDB: !!dbTodo
+                }
+            })
+
+            console.log('Todos with DB status:', todos.value)
         } catch (error) {
             console.error('Error:', error)
         }
@@ -22,5 +37,6 @@ export const useTodoStore = defineStore('Todo', () => {
     function increment() {
         count.value++
     }
+
     return { count, doubleCount, increment, getData, todos }
 })
