@@ -72,29 +72,33 @@ const activateSession = async () => {
   success.value = ''
 
   const result = await login(email.value, password.value)
+  try {
+    if (!result.user.emailVerified) {
+      await auth.signOut()
+      error.value = 'Please verify your email before logging in. Check your inbox and spam'
+      toast.error('Email not verified. Check your email.')
+      email.value = ''
+      password.value = ''
+      loading.value = false
+      return
+    }
 
-  if (!result.user.emailVerified) {
-    await auth.signOut()
-    error.value = 'Please verify your email before logging in. Check your inbox and spam'
-    toast.error('Email not verified. Check your email.')
-    email.value = ''
-    password.value = ''
-    loading.value = false
-    return
-  }
-
-
-  if (result.ok) {
-    success.value = result.message
-    toast.success("User login successfully.")
-    setTimeout(() => {
-      router.push('/')
-    }, 1000)
-  } else {
+    if (result.ok) {
+      success.value = result.message
+      toast.success("User login successfully.")
+      setTimeout(() => {
+        router.push('/')
+      }, 200)
+    } else {
+      error.value = result.error
+      toast.error("Login failed. Please check your credentials.")
+      password.value = ''
+    }
+  } catch (error) {
     error.value = result.error
     toast.error("Login failed. Please check your credentials.")
-    password.value = ''
   }
+
   loading.value = false
 
 }

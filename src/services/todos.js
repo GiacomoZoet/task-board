@@ -12,10 +12,10 @@ export const addTodo = async (userId, todo) => {
     }
 }
 
-// Get all user todos
+// Get  user todos
 export const getTodos = async (userId) => {
     try {
-        const todoCollection = collection(db, 'users', userId, 'todos')
+        const todoCollection = collection(db, 'users', userId, 'todo')
         const snapshot = await getDocs(todoCollection)
         const todos = snapshot.docs.map(doc => doc.data())
         return { ok: true, todos }

@@ -1,18 +1,23 @@
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useTodoStore } from '@/stores/TodoStore.js'
 import TodoCard from '@/components/TodoCard.vue'
 import { getUser, isAuthenticated} from "@/services/authentication.js";
-import { addTodo} from "@/services/todos.js";
+import {addTodo, getTodos, getAllTodos} from "@/services/todos.js";
 import { useToast } from "vue-toastification";
 import {useRouter} from "vue-router";
+import {getAuth} from "firebase/auth";
+
 
 const router = useRouter();
 const toast = useToast()
 const tasks = useTodoStore()
+const assignedTask = ref([])
 
 onMounted(async () => {
   tasks.getData()
+  assignedTask.value = await getAllTodos()
+  console.log('HAAAAAA', assignedTask.value.todos)
 })
 
 
@@ -30,10 +35,20 @@ const addTodoToList = async (todo) => {
   const data = {
     id: todo.id,
     todo: todo.todo,
-    completed: todo.completed
+    completed: todo.completed,
+    assignedTo: user.value.uid
   }
 
+
+  const result = await addTodo(user.value.uid , data)
+
+  if (result.ok) {
+    toast.success("Task added to todolist.")
+  } else {
+    toast.warning("Failed to add task.")
+  }
 }
+
 
 </script>
 
@@ -44,6 +59,7 @@ const addTodoToList = async (todo) => {
           v-for="todo in tasks.todos"
           :key="todo.id"
           :todo="todo"
+          @add-to-todo="addTodoToList"
       />
     </div>
   </section>
