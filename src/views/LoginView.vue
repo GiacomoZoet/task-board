@@ -41,9 +41,14 @@ const registerUser = async () => {
     success.value = result.message
     toast.success("User registered successfully.")
 
-    //send email verification
-    await sendEmailVerificationDB(result.user.user)
-    toast.success("Email verification sent.")
+    // Send email verification
+    const verificationResult = await sendEmailVerificationDB(result.user.user)
+
+    if (verificationResult && verificationResult.ok) {
+      toast.success("Email verification sent.")
+    } else {
+      toast.warning("User created but email verification failed. You can resend it later.")
+    }
 
     setTimeout(() => {
       isRegistered.value = true
@@ -51,9 +56,9 @@ const registerUser = async () => {
       password.value = ''
       confirmPassword.value = ''
     }, 200)
-  }else {
-    error.value = result.message
-    toast.error("Register email verification failed!")
+  } else {
+    error.value = result.error
+    toast.error("Registration failed!")
   }
 
   loading.value = false

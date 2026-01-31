@@ -21,6 +21,12 @@ onAuthStateChanged(auth, (userFirebase) => {
 export const register = async (email, password) => {
     try {
         const userCredentials = await createUserWithEmailAndPassword(auth, email, password)
+
+        // Send email verification after successful registration
+        await sendEmailVerification(userCredentials.user, {
+            url: window.location.origin + '/dashboard'
+        })
+
         return {
             ok: true,
             message: "user created successfully",
